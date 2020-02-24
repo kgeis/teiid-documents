@@ -1,15 +1,17 @@
 
+[id="client-dev-Standalone_Application-Standalone-Application"]
 = Standalone Application
 
 To use either Driver or DataSource based connections, add the client JAR to your Java client application’s classpath. See the simple client example in the kit for a full Java sample of the following.
 
+[id="client-dev-Standalone_Application-Driver-Connection"]
 == Driver Connection
 
 Sample Code:
 
 [source,java]
 ----
-public class TeiidClient {
+public class {{ book.productnameFull }}Client {
     public Connection getConnection(String user, String password) throws Exception {
         String url = "jdbc:teiid:myVDB@mm://localhost:31000;ApplicationName=myApp";
         return DriverManager.getConnection(url, user, password);
@@ -17,15 +19,16 @@ public class TeiidClient {
 }
 ----
 
+[id="client-dev-Standalone_Application-Datasource-Connection"]
 === Datasource Connection
 
 Sample Code:
 
 [source,java]
 ----
-public class TeiidClient {
+public class {{ book.productnameFull }}Client {
     public Connection getConnection(String user, String password) throws Exception {
-        TeiidDataSource ds = new TeiidDataSource();
+        {{ book.productnameFull }}DataSource ds = new {{ book.productnameFull }}DataSource();
         ds.setUser(user);
         ds.setPassword(password);
         ds.setServerName("localhost");

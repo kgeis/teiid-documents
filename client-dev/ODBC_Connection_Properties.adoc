@@ -1,7 +1,8 @@
+[id="client-dev-ODBC_Connection_Properties-Configuring-Connection-Properties-with-ODBC"]
 = Configuring Connection Properties with ODBC
 
 When working with ODBC connection, the user can set the connection properties link:Driver_Connection.adoc[Driver Connection#URL Connection Properties] 
-that are available in Teiid by executing the command like below.
+that are available in {{ book.productnameFull }} by executing the command like below.
 
 ----
 SET <property-name> TO <property-value>
@@ -13,11 +14,19 @@ for example to turn on the result set caching you can issue
 SET resultSetCacheMode TO 'true'
 ----
 
-Another option is to set this as VDB property in vdb.xml file as 
+Another option is to set this as VDB property in the vdb file as 
 
+[source,sql]
+----
+CREATE DATABASE vdb OPTIONS ("connection.partialResultsMode" true);
+----
+
+{% if book.targetWildfly %}
+Or in an XML VDB:
 ----
 <vdb name="...">
     <property name="connection.resultSetCacheMode" value="true"/>
     ...
 </vdb>
 ----
+{% endif %}

@@ -1,0 +1,19 @@
+{
+    "variables" : {
+        "versionNumber" : "13.1",
+        "fullVersionNumber": "13.1.0",
+        "asVersionNumber" :  "WildFly 17.0.0",
+        "asFullVersionNumber" :  "17.0.0.Final",
+        "asName" :  "WildFly",
+        "copyrightYear" :  "2019",
+        "copyrightHolder" :  "Red Hat, Inc.",
+        "javaVersionUrl" : "https://docs.oracle.com/en/java/javase/11",
+        "asDocRoot" : "https://docs.jboss.org/author/display/WFLY/Documentation",
+        "archeTypeVersion" : "12.0.0",
+        "targetWildfly" : true,
+        "targetSpring" : false,
+        "productnameFull" : "Teiid",
+        "odataContext" : "odata4/northwind/NW"
+    },
+    "plugins": ["collapsible-menu"]
+}

@@ -1,7 +1,7 @@
 
 = Microsoft Excel Translator
 
-The Microsoft Excel Translator, known by the type name _excel_, exposes querying functionality to Excel documents using link:../admin/File_Data_Sources.adoc[File Data Sources]. Microsoft Excel is a popular spreadsheet software that is used by all the organizations across the globe for simple reporting purposes. This translator provides an easy way read a Excel spreadsheet and provide contents of the spreadsheet in the tabular form that can be integrated with other sources in Teiid.
+The Microsoft Excel Translator, known by the type name _excel_, exposes querying functionality to Excel document. Microsoft Excel is a popular spreadsheet software that is used by all the organizations across the globe for simple reporting purposes. This translator provides an easy way read a Excel spreadsheet and provide contents of the spreadsheet in the tabular form that can be integrated with other sources in {{ book.productnameFull }}.
 
 NOTE: *"Does it only work on Windows?"* -  No, it works on all platforms, including Windows and Linux. This translator uses Apache POI libraries to access the Excel documents which are platform independent.
 
@@ -33,6 +33,20 @@ The below shows an example of a VDB, that shows a exposing a Excel Document.
 
 [source,xml]
 ----
+CREATE DATABASE excelvdb;
+USE DATABASE excelvdb;
+CREATE SERVER connector FOREIGN DATA WRAPPER excel OPTIONS ("resource-name" 'java:/fileDS');
+CREATE SCHEMA excel SERVER connector;
+SET SCHEMA excel;
+IMPORT FROM SERVER connector INTO excel OPTIONS (
+    "importer.headerRowNumber" '1',
+    "importer.ExcelFileName" 'names.xls');
+----
+
+{% if book.targetWildfly %}
+As an XML VDB:
+[source,xml]
+----
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <vdb name="excelvdb" version="1">
     <model name="excel">
@@ -42,22 +56,15 @@ The below shows an example of a VDB, that shows a exposing a Excel Document.
     </model>
 </vdb>
 ----
+{% endif %}
 
-"connection-jndi-name" in above represents connection to Excel document. The Excel translator does NOT provide a connection to the Excel Document. For that purpose, Teiid uses File JCA adapter that provides a connection to Excel. To define such connector, see link:../admin/File_Data_Sources.adoc[File Data Sources] or see an example in "<jboss-as>/docs/teiid/datasources/file". Once you configure both of the above, you can deploy them to Teiid Server and access the Excel Document using JDBC/ODBC/OData protocol.
-
-== Designer VDB
-
-If you are using Designer Tooling, to create Excel based VDB
-
-* Create/use a Teiid Designer Model project
-* Use "Teiid Connection >> Source Model" importer, create File Data Source using data source creation wizard and use _excel_ as translator in the importer. Based on the Excel document relevant relational tables will be created.
-* Create a VDB and deploy into Teiid Server and and access the Excel Document using JDBC/ODBC/OData protocol.
+"connection-jndi-name" in above represents connection to Excel document.
 
 NOTE: *"Headers in Document?"* - If you have headers in the Excel document, you can guide the import process to select the cell headers as the column names in the table creation process. See "Import Properties" section below on defining the "import" properties.
 
 === Import Properties
 
-Import properties guide the schema generation part during the deployment of the VDB. This can be used in a native import or while using "Teiid Connection >> Source Model" in Teiid Designer.
+Import properties guide the schema generation part during the deployment of the VDB. This can be used in a native import.
 
 |=== 
 |Property Name |Description |Default
@@ -112,6 +119,24 @@ Metadata Extension Properties are the properties that are defined on the schema 
 
 The below shows an example table that is defined using the Extension Metadata Properties.
 
+[source,sql]
+----
+CREATE DATABASE excelvdb;
+USE DATABASE excelvdb;
+CREATE SERVER connector FOREIGN DATA WRAPPER excel OPTIONS ("resource-name" 'java:/fileDS');
+CREATE SCHEMA excel SERVER connector;
+SET SCHEMA excel;
+CREATE FOREIGN TABLE Person (
+                ROW_ID integer OPTIONS (SEARCHABLE 'All_Except_Like', "teiid_excel:CELL_NUMBER" 'ROW_ID'),
+                FirstName string OPTIONS (SEARCHABLE 'Unsearchable', "teiid_excel:CELL_NUMBER" '1'),
+                LastName string OPTIONS (SEARCHABLE 'Unsearchable', "teiid_excel:CELL_NUMBER" '2'),
+                Age integer OPTIONS (SEARCHABLE 'Unsearchable', "teiid_excel:CELL_NUMBER" '3'),
+                CONSTRAINT PK0 PRIMARY KEY(ROW_ID)
+             ) OPTIONS ("NAMEINSOURCE" 'Sheet1',"teiid_excel:FILE" 'names.xlsx', "teiid_excel:FIRST_DATA_ROW_NUMBER" '2')
+----
+
+{% if book.targetWildfly %}
+As an XML VDB:
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -130,10 +155,11 @@ The below shows an example table that is defined using the Extension Metadata Pr
     </model>
 </vdb>
 ----
+{% endif %}
 
 NOTE: *"Extended capabilities using ROW_ID column"* - If you define column, that has extension metadata property "CELL_NUMBER" with value "ROW_ID", then that column value contains the row information from Excel document. You can mark this column as Primary Key. You can use this column in SELECT statements with a restrictive set of capabilities including: comparison predicates, IN predicates and LIMIT. All other columns can *not* be used as predicates in a query.
 
-TIP: User does not have to depend upon "source metadata" import, or Designer tool import to create the schema represented by Excel document, they can manually create a source table and add the appropriate extension properties to make a fully functional model. If you introspect the schema model created by the import, it would look like above.
+TIP: User does not have to depend upon "source metadata" import to create the schema represented by Excel document, they can manually create a source table and add the appropriate extension properties to make a fully functional model. If you introspect the schema model created by the import, it would look like above.
 
 With 10.3+ the Excel translator does support updates with a couple of limitations:
 * The ROW_ID can not be directly modified or used as an insert value.
@@ -142,15 +168,17 @@ With 10.3+ the Excel translator does support updates with a couple of limitation
 
 The ROW_ID of an inserted row can be returned as a generated key.
 
+{% if book.targetWildfly %}
 == JCA Resource Adapter
 
-The Teiid specific Excel Resource Adapter does not exist, user should use File JCA adapter with this translator. See link:../admin/File_Data_Sources.adoc[File Data Sources] for opening a File based connection.
+See link:../admin/File_Data_Sources.adoc[File Data Source], the link:../admin/Ftp_Data_Sources.adoc[FTP Data Source] and the Admin Guide in general for configuration information.
+{% endif %}
 
 == Native Queries
 
-NOTE: This feature is not applicable for Excel translator.
+NOTE: This feature is not applicable for the Excel translator.
 
 === Direct Query Procedure
 
-NOTE: This feature is not applicable for Excel translator.
+NOTE: This feature is not applicable for the Excel translator.
 

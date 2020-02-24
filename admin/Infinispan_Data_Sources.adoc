@@ -1,7 +1,7 @@
 
 = Infinispan Data Sources
 
-Infinispan data sources use a Teiid specific JCA connector that is deployed into {{ book.asVersionNumber }} during installation. There are many ways to create a Infinispan hotrod based data source, using CLI, link:AdminShell.adoc[AdminShell],
+Infinispan data sources use a {{ book.productnameFull }} specific JCA connector that is deployed into {{ book.asVersionNumber }} during installation. There are many ways to create a Infinispan hotrod based data source, using CLI,
 admin-console, etc. The example shown below uses the CLI tool, as this works in both Standalone and Domain modes.
 
 Execute the following commands using the {{ book.asDocRoot }}/Admin+Guide#AdminGuide-RunningtheCLI[CLI] once you connected to the Server. Make sure you provide the correct URL and user credentials. Add any additional properties required by the connector by duplicating the "connection-definitions" command below. Edit the JNDI name to match the JNDI name you used in VDB.
@@ -27,19 +27,19 @@ All the properties that are defined on the RAR file are
 |n/a
 
 |UserName
-|If remote server is secured, this property used as username to login
+|If remote server is secured, this property is used as username to login
 |No
 |n/a
 
 |Password
-|If remote server is secured, this property used as password to login
+|If remote server is secured, this property is used as password to login
 |No
 |n/a
 
 |SaslMechanism
-|If remote server is secured, this property defines the type of security. Allowed values are "CRAM-MD5", "DIGEST-MD5", "PLAIN", "EXTERNAL". "EXTERNAL" is when certificate based security at use, all others use username/password.
+|"EXTERNAL" is when certificate based security at use, all others use username/password.
 |No
-|n/a
+|The default mechanism of Hotrod.
 
 |AuthenticationRealm
 |Realm to use for authentication.
@@ -68,6 +68,21 @@ All the properties that are defined on the RAR file are
 
 |KeyStorePassword
 |When "EXTERNAL" SaslMechnism used, use this property to define keystore  password. Alternatively JAVA system property "javax.net.ssl.keyStorePassword" can also be defined instead.
+|No
+|n/a
+
+|CacheName
+|The default cache name.
+|No
+|default
+
+|CacheTemplate
+|If a cache needs to be created the template name to use.
+|No
+|n/a
+
+|TransactionMode
+|The transaction mode expected for cache access.  Can be one of: FULL_XA, NON_DURABLE_XA, NON_XA
 |No
 |n/a
 

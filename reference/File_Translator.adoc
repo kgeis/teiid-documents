@@ -1,8 +1,7 @@
 
 = File Translator
 
-The file translator, known by the type name _file_, exposes stored procedures to leverage file system resources exposed 
-by the link:../admin/File_Data_Sources.adoc[File Data Source] and the link:../admin/Ftp_Data_Sources.adoc[FTP Data Source]. It will commonly be used with the TEXTTABLE or XMLTABLE table functions to use CSV or XML formatted data.
+The file translator, known by the type name _file_, exposes stored procedures to leverage file resources. It will commonly be used with the TEXTTABLE or XMLTABLE table functions to use CSV or XML formatted data.
 
 *Execution Properties*
 
@@ -10,7 +9,7 @@ by the link:../admin/File_Data_Sources.adoc[File Data Source] and the link:../ad
 |Name |Description |Default
 
 |Encoding
-|The encoding that should be used for CLOBs returned by the getTextFiles procedure.  The value should match an encoding known to the JRE.
+|The encoding that should be used for CLOBs returned by the getTextFiles procedure.  The value should match an encoding known to {{ book.productnameFull }}, see also link:String_Functions.adoc[TO_CHARS and TO_BYTES].
 |The system default encoding
 
 |ExceptionIfFileNotFound
@@ -20,6 +19,19 @@ by the link:../admin/File_Data_Sources.adoc[File Data Source] and the link:../ad
 
 TIP: See link:Translators.adoc#_override_execution_properties[override an execution property] and the example below to set the properties.
 
+VDB DDL Override Example
+[source,sql]
+----
+CREATE SERVER "file-override" 
+    FOREIGN DATA WRAPPER file 
+    OPTIONS(
+        Encoding 'ISO-8859-1', "ExceptionIfFileNotFound" false
+    );
+    
+CREATE SCHEMA file SERVER "file-override";
+----
+
+{% if book.targetWildfly %}
 VDB XML Override Example
 [source,xml]
 ----
@@ -32,6 +44,7 @@ VDB XML Override Example
     <property name="ExceptionIfFileNotFound" value="false"/>
 </translator>
 ----
+{% endif %}
 
 == Usage
 
@@ -96,9 +109,17 @@ call deleteFile('path')
 The path should reference an existing file.  If the file does not exist and ExceptionIfFileNotFound is true, then an exception will be thrown.  Or if the file
 cannot be deleted an exception will be thrown.
 
-NOTE： *Native queries* - Native or direct query execution is not supported on the File Translator.
-
+{% if book.targetWildfly %}
 == JCA Resource Adapter
 
-The resource adapter for this translator provided through "File Data Source", Refer to Admin Guide for configuration information.
+See link:../admin/File_Data_Sources.adoc[File Data Source], the link:../admin/Ftp_Data_Sources.adoc[FTP Data Source] and the Admin Guide in general for configuration information.
+{% endif %}
+
+== Native Queries
+
+NOTE: This feature is not applicable for the File translator.
+
+=== Direct Query Procedure
+
+NOTE: This feature is not applicable for the File translator.
 

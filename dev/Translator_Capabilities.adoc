@@ -83,6 +83,10 @@ The following table lists the capabilities that can be specified in the `Executi
 |
 |Translator can support a table that returns a table in the FROM clause.
 
+|ProcedureParameterExpression
+|
+|Translator can support an expression, not just a literal, as a procedure parameter.
+
 |BetweenCriteria
 |
 |Not currently used - between criteria is rewriten as compound comparisions.
@@ -195,6 +199,10 @@ The following table lists the capabilities that can be specified in the `Executi
 |
 |Translator can support the COUNT aggregate function.
 
+|AggregatesCountBig
+|AggregatesCount, AggregatesCountStar
+|Translator supports a separate COUNT function that returns a long value.  If false COUNT will be pushed instead.
+
 |AggregatesCountStar
 |
 |Translator can support the COUNT(*) aggregate function.
@@ -218,6 +226,14 @@ The following table lists the capabilities that can be specified in the `Executi
 |AggregatesEnhancedNumeric
 |
 |Translator can support the VAR_SAMP, VAR_POP, STDDEV_SAMP, STDDEV_POP aggregate functions.
+
+|StringAgg
+|
+|Translator can support the string_agg aggregate function.
+
+|ListAgg
+|
+|Translator can support a restricted form (matching Oracle's listagg) of the string_agg aggregate function.
 
 |ScalarSubqueries
 |
@@ -295,9 +311,17 @@ The following table lists the capabilities that can be specified in the `Executi
 |CommonTableExpressions
 |Translator supports a WITH clause in subqueries.
 
+|RecursiveCommonTableExpressions
+|CommonTableExpressions
+|Translator supports recursive common table expressions
+
 |ElementaryOlapOperations
 |
 |Translator supports window functions and analytic functions RANK, DENSE_RANK, and ROW_NUMBER.
+
+|WindowFrameClause
+|ElementaryOlapOperations
+|Translator supports window frame RANGE/ROWS clause.  Defaults to ElementaryOlapOperations support value.
 
 |WindowOrderByWithAggregates
 |ElementaryOlapOperations
@@ -310,6 +334,22 @@ The following table lists the capabilities that can be specified in the `Executi
 |AdvancedOlapOperations
 |ElementaryOlapOperations
 |Translator supports aggregate conditions.
+
+|WindowFunctionCumeDist
+|
+|Translator supports CUME_DIST window function. Defaults to the support value for ElementaryOlapOperations
+
+|WindowFunctionPercentDist
+|
+|Translator supports PERCENT_DIST window function. Defaults to the support value for ElementaryOlapOperations
+
+|WindowFunctionNtile
+|
+|Translator supports NTILE window function. Defaults to the support value for ElementaryOlapOperations
+
+|WindowFunctionNthValue
+|
+|Translator supports NTH_VALUE window function. Defaults to the support value for ElementaryOlapOperations
 
 |OnlyFormatLiterals
 |function support for a parse/format function and an implementation of the supportsFormatLiteral method.
@@ -334,11 +374,20 @@ The following table lists the capabilities that can be specified in the `Executi
 |Upsert
 |
 |Translator supports an upsert style insert.
-|===
 
 |OnlyTimestampAddLiteral
 |function support for a timestampadd function.
 |Translator supports only a literal interval value.
+
+|MultipleOpenExecutions
+|
+|Translator supports multiple open executions against a single connection.  If false, in transactional scenarios the execution will be thread bound.
+
+|GeographyType
+|
+|Translator supports the geograpy type variations of ST_ geospatial functions.
+
+|===
 
 Note that any pushdown subquery must itself be compliant with the Translator capabilities.
 
@@ -352,7 +401,7 @@ The method `ExecutionFactory.requiresCriteria()` should return true if the Trans
 
 The method `ExecutionFactory.getSupportedFunctions()` can be used to specify which system/user defined scalar and user defined aggregate functions the Translator supports. The constants interface `org.teiid.translator.SourceSystemFunctions` contains the string names of all possible built-in pushdown functions, which includes the four standard math operators: +, -, *, and /.
 
-Not all system functions appear in SourceSystemFunctions, since some system functions will always be evaluated in Teiid, are simple aliases to other functions, or are rewritten to a more standard expression.
+Not all system functions appear in SourceSystemFunctions, since some system functions will always be evaluated in {{ book.productnameFull }}, are simple aliases to other functions, or are rewritten to a more standard expression.
 
 This documentation for system functions can be found at link:../reference/Scalar_Functions.adoc[Scalar Functions]. If the Translator states that it supports a function, it must support all type combinations and overloaded forms of that function.
 
@@ -383,6 +432,8 @@ The method `ExecutionFactory.getMaxInCriteriaSize()` can be used to specify the 
 The method `ExecutionFactory.getMaxDependentInPredicates()` is used to specify the maximum number of IN predicates (of at most MaxInCriteriaSize) that can be passed as part of a dependent join. For example if there are 10000 values to pass as part of the dependent join and a MaxInCriteriaSize of 1000 and a MaxDependentInPredicates setting of 5, then the dependent join logic will form two source queries each with 5 IN predicates of 1000 values each combined by OR.
 
 The method `ExecutionFactory.getMaxFromGroups()` can be used to specify the maximum number of FROM Clause groups that can used in a join. -1 indicates there is no limit.
+
+The method `ExecutionFactory.getMaxProjectedColumns()` can be used to specify the maximum number of columns or expressions in the select clause. -1 indicates there is no limit.
 
 == Update Execution Modes
 

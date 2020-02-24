@@ -3,12 +3,12 @@
 
 Date and time functions return or operate on dates, times, or timestamps.
 
-Parse and format Date/Time functions use the convention established within the java.text.SimpleDateFormat class to define the formats you can use with these functions. You can learn more about how this class defines formats by visiting the http://docs.oracle.com/javase/6/docs/api/java/text/SimpleDateFormat.html[Javadocs for SimpleDateFormat].
+Parse and format Date/Time functions use the convention established within the java.text.SimpleDateFormat class to define the formats you can use with these functions. You can learn more about how this class defines formats by visiting the {{ book.javaVersionUrl }}/docs/api/java.base/java/text/SimpleDateFormat.html[Javadocs for SimpleDateFormat].
 
 |===
 |Function |Definition |Datatype Constraint
 
-|CURDATE() CURRENT_DATE()
+|CURDATE() CURRENT_DATE[()]
 |Return current date - will return the same value for all invocations in the user command
 |returns date
 
@@ -21,7 +21,7 @@ Parse and format Date/Time functions use the convention established within the j
 |returns timestamp
 
 |CURRENT_TIME[(precision)]
-|Return current time - will return the same value for all invocations in the user command.  The Teiid time type does not track fractional seconds, so the precision argument is effectively ignored.  Without a precision is the same as CURTIME().
+|Return current time - will return the same value for all invocations in the user command.  The {{ book.productnameFull }} time type does not track fractional seconds, so the precision argument is effectively ignored.  Without a precision is the same as CURTIME().
 |returns time
 
 |CURRENT_TIMESTAMP[(precision)]
@@ -44,10 +44,14 @@ Parse and format Date/Time functions use the convention established within the j
 |Return day number in year
 |x in {date, timestamp}, returns integer
 
+|EPOCH(x)
+|Return seconds since the unix epoch with microsecond precision
+|x in {date, timestamp}, returns double
+
 |EXTRACT(YEAR\|MONTH\|DAY
-\|HOUR\|MINUTE\|SECOND FROM x)
-|Return the given field value from the date value x. Produces the same result as the associated YEAR, MONTH, DAYOFMONTH, HOUR, MINUTE, SECOND functions.The SQL specification also allows for TIMEZONE_HOUR and TIMEZONE_MINUTE as extraction targets. In Teiid all date values are in the timezone of the server.
-|x in {date, time, timestamp}, returns integer
+\|HOUR\|MINUTE\|SECOND\|QUARTER\|EPOCH FROM x)
+|Return the given field value from the date value x. Produces the same result as the associated YEAR, MONTH, DAYOFMONTH, HOUR, MINUTE, SECOND, QUARTER, EPOCH functions. In {{ book.productnameFull }} all date values are in the timezone of the server.
+|x in {date, time, timestamp}, epoch returns double, the others return integer
 
 |FORMATDATE(x, y)
 |Format date x using format y
@@ -61,11 +65,11 @@ Parse and format Date/Time functions use the convention established within the j
 |Format timestamp x using format y
 |x is timestamp, y is string, returns string
 
-|FROM_MILLIS (millis)
+|FROM_MILLIS(millis)
 |Return the Timestamp value for the given milliseconds  
 |long UTC timestamp in milliseconds
 
-|FROM_UNIXTIME (unix_timestamp)
+|FROM_UNIXTIME(unix_timestamp)
 |Return the Unix timestamp as a String value with the default format of yyyy/mm/dd hh:mm:ss
 |long Unix timestamp (in seconds)
 
@@ -77,11 +81,11 @@ Parse and format Date/Time functions use the convention established within the j
 |Return minute
 |x in {time, timestamp}, returns integer
 
-|MODIFYTIMEZONE (timestamp, startTimeZone, endTimeZone)
+|MODIFYTIMEZONE(timestamp, startTimeZone, endTimeZone)
 |Returns a timestamp based upon the incoming timestamp adjusted for the differential between the start and end time zones.  i.e. if the server is in GMT-6, then modifytimezone({ts '2006-01-10 04:00:00.0'},'GMT-7', 'GMT-8') will return the timestamp {ts '2006-01-10 05:00:00.0'} as read in GMT-6.  The value has been adjusted 1 hour ahead to compensate for the difference between GMT-7 and GMT-8.
 |startTimeZone and endTimeZone are strings, returns a timestamp
 
-|MODIFYTIMEZONE (timestamp, endTimeZone)
+|MODIFYTIMEZONE(timestamp, endTimeZone)
 |Return a timestamp in the same manner as modifytimezone(timestamp, startTimeZone, endTimeZone), but will assume that the startTimeZone is the same as the server process.
 |Timestamp is a timestamp; endTimeZone is a string, returns a timestamp
 
@@ -165,7 +169,7 @@ TIMESTAMPADD(interval, count, timestamp)
 * SQL_TSI_YEAR - years
 
 |count
-|An integer represent the datetime need add to timestamp 
+|A long or integer count of units to add to the timestamp.  Negative values will subtract that number of units.  Long values are allowed for symmetry with TIMESTAMPDIFF - but the effective range is still limited to integer values. 
 
 |timestamp
 |A datetime expression.
@@ -214,13 +218,13 @@ NOTE: If (endTime > startTime), a non-negative number will be returned. If (endT
 
 *Compatibility Issues*
 
-* Timestampdiff typically returns an integer, however Teiid’s version returns a long. You may receive an exception if you expect a value out
+* Timestampdiff typically returns an integer, however {{ book.productnameFull }}’s version returns a long. You may receive an exception if you expect a value out
 of the integer range from a pushed down timestampdiff.
-* Teiid’s implementation of timestamp diff in 8.2 and prior versions returned values based upon the number of whole canonical interval approximations (365 days in a year, 91 days in a quarter, 30 days in a month, etc.) crossed. For example the difference in months between 2013-03-24 and 2013-04-01 was 0, but based upon the date parts crossed is 1. See link:../admin/System_Properties.adoc[System Properties] for backwards compatibility.
+* {{ book.productnameFull }}’s implementation of timestamp diff in 8.2 and prior versions returned values based upon the number of whole canonical interval approximations (365 days in a year, 91 days in a quarter, 30 days in a month, etc.) crossed. For example the difference in months between 2013-03-24 and 2013-04-01 was 0, but based upon the date parts crossed is 1. See link:../admin/System_Properties.adoc[System Properties] for backwards compatibility.
 
 == Parsing Date Datatypes from Strings
 
-Teiid does not implicitly convert strings that contain dates presented in different formats, such as '19970101' and '31/1/1996' to date-related datatypes. You can, however, use the parseDate, parseTime, and parseTimestamp functions, described in the next section, to explicitly convert strings with a different format to the appropriate datatype. These functions use the convention established within the java.text.SimpleDateFormat class to define the formats you can use with these functions. You can learn more about how this class defines date and time string formats by visiting the http://docs.oracle.com/javase/6/docs/api/java/text/SimpleDateFormat.html[Javadocs for SimpleDateFormat]. Note that the format strings will be locale specific to your Java default locale.
+{{ book.productnameFull }} does not implicitly convert strings that contain dates presented in different formats, such as '19970101' and '31/1/1996' to date-related datatypes. You can, however, use the parseDate, parseTime, and parseTimestamp functions, described in the next section, to explicitly convert strings with a different format to the appropriate datatype. These functions use the convention established within the java.text.SimpleDateFormat class to define the formats you can use with these functions. You can learn more about how this class defines date and time string formats by visiting the {{ book.javaVersionUrl }}/docs/api/java.base/java/text/SimpleDateFormat.html[Javadocs for SimpleDateFormat]. Note that the format strings will be locale specific to your Java default locale.
 
 For example, you could use these function calls, with the formatting string that adheres to the java.text.SimpleDateFormat convention, to parse strings and return the datatype you need:
 

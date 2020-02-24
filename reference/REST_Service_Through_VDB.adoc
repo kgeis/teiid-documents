@@ -1,11 +1,11 @@
 
 = REST Service Through VDB
 
-With help of link:DDL_Metadata.html[DDL Metadata] variety of metadata can be defined on VDB schema models. This metadata is not limited to just defining the tables, procedures and functions. The capabilities of source systems or any extensions to metadata can also be defined on the schema objects using the OPTIONS clause. One such extension properties that Teiid defines is to expose Teiid procedures as REST based services.
+With help of link:DDL_Metadata.html[DDL Metadata] variety of metadata can be defined on VDB schema models. This metadata is not limited to just defining the tables, procedures and functions. The capabilities of source systems or any extensions to metadata can also be defined on the schema objects using the OPTIONS clause. One such extension properties that {{ book.productnameFull }} defines is to expose {{ book.productnameFull }} procedures as REST based services.
 
-== Expose Teiid Procedure as Rest Service
+== Expose {{ book.productnameFull }} Procedure as Rest Service
 
-One can define below REST based properties on a Teiid virtual procedure, and when the VDB is deployed the Teiid VDB deployer will analyze the metadata and deploy a REST service automatically. When the VDB un-deployed the REST service also deployed.
+One can define below REST based properties on a {{ book.productnameFull }} virtual procedure, and when the VDB is deployed the {{ book.productnameFull }} VDB deployer will analyze the metadata and deploy a REST service automatically. When the VDB un-deployed the REST service also deployed.
 
 |===
 |Property Name |Description |Is Required |Allowed Values
@@ -13,22 +13,22 @@ One can define below REST based properties on a Teiid virtual procedure, and whe
 |METHOD
 |HTTP Method to use
 |Yes
-|GET \| POST\| PUT \| DELETE
+|Method names including GET \| POST\| PUT \| DELETE
 
 |URI
 |URI of procedure
 |Yes
-|ex:/procedure
+|A relative path, which can include parameters as {param name}.  For example: /procedure/{param1} 
 
 |PRODUCES
 |Type of content produced by the service
-|no
-|xml \| json \| plain \| any text
+|No.  If not specified will be inferred from the procedure return value.
+|A comma separated list of the full MIME type(s), or one of xml, json, or plain
 
 |CHARSET
-|When procedure returns Blob, and content type text based, this character set to used to convert the data
-|no
-|US-ASCII \| UTF-8
+|When string/xml data is returned, this will be the encoding
+|No.  If not specified will default to the system default charset.
+|A valid Java charset name, such as UTF-8, US-ASCII, etc.
 |===
 
 The above properties must be defined with NAMESPACE `http://teiid.org/rest' on the metadata. Here is an example VDB that defines the REST based service.
@@ -49,16 +49,15 @@ The above properties must be defined with NAMESPACE `http://teiid.org/rest' on t
     </model>
     <model name="View" type ="VIRTUAL">
          <metadata type="DDL"><![CDATA[
-            SET NAMESPACE 'http://teiid.org/rest' AS REST;
             -- This procedure produces XML payload
-            CREATE VIRTUAL PROCEDURE g1Table(IN p1 integer) RETURNS TABLE (xml_out xml) OPTIONS (UPDATECOUNT 0, "REST:METHOD" 'GET', "REST:URI" 'g1/{p1}')
+            CREATE VIRTUAL PROCEDURE g1Table(IN p1 integer) RETURNS TABLE (xml_out xml) OPTIONS (UPDATECOUNT 0, "teiid_rest:METHOD" 'GET', "teiid_rest:URI" 'g1/{p1}')
             AS
             BEGIN
                 SELECT XMLELEMENT(NAME "rows", XMLATTRIBUTES (g1Table.p1 as p1), XMLAGG(XMLELEMENT(NAME "row", XMLFOREST(e1, e2)))) AS xml_out FROM PM1.G1;
             END
             
             -- This procedure produces JSON payload
-            CREATE VIRTUAL PROCEDURE g2Table(IN p1 integer) RETURNS TABLE (json_out clob) OPTIONS (UPDATECOUNT 0, "REST:METHOD" 'GET', "REST:URI" 'g2/{p1}')
+            CREATE VIRTUAL PROCEDURE g2Table(IN p1 integer) RETURNS TABLE (json_out clob) OPTIONS (UPDATECOUNT 0, "teiid_rest:METHOD" 'GET', "teiid_rest:URI" 'g2/{p1}')
             AS
             BEGIN
                 SELECT JSONOBJECT(JSONARRAY_AGG(JSONOBJECT(e1, e2)) as g2) AS json_out FROM PM1.G2;
@@ -69,9 +68,9 @@ The above properties must be defined with NAMESPACE `http://teiid.org/rest' on t
 </vdb>
 ----
 
-NOTE: <property name="{http://teiid.org/rest}auto-generate" value="true"/>, can be used to control the generation of the REST based WAR based on the VDB. This property along with at least one procedure with REST based extension metadata is required to generate a REST WAR file. Also, the procedure needs to return result set with single column of either XML, Clob, Blob or String. When PRODUCES property is not defined, this property is derived from the result column that is projected out.
+NOTE: <property name="{http://teiid.org/rest}auto-generate" value="true"/>, can be used to control the generation of the REST based WAR based on the VDB. This property along with at least one procedure with REST based extension metadata is required to generate a REST WAR file. Also, the procedure needs to return result set with single column of either XML, Clob, Blob or String. When PRODUCES property is not defined, this property is derived from the result column that is projected out.  The PRODUCES values xml, json, and plain are actually converted to the MIME types application/xml, application/json, and text/plain respectively.  You may enter the full MIME type if you need, such as text/html. 
 
-when the above VDB is deployed in the {{ book.asName }} + Teiid server, and if the VDB is valid and after the metadata is loaded then a REST war generated automatically and deployed into the local {{ book.asName }} server. The REST VDB is deployed with "\{vdb-name}_\{vdb-version}" context. The model name is prepended to uri of the service call. For example the procedure in above example can be accessed as
+When the above VDB is deployed in the {{ book.asName }} + {{ book.productnameFull }} server, and if the VDB is valid and after the metadata is loaded then a REST war generated automatically and deployed into the local {{ book.asName }} server. The REST VDB is deployed with "\{vdb-name}_\{vdb-version}" context. The model name is prepended to uri of the service call. For example the procedure in above example can be accessed as
 
 [source,sql]
 ----
@@ -96,7 +95,7 @@ Make sure that the number of parameters defined on the URI and query match to th
 
 'POST' methods MUST not be defined with URI with PATHS for parameters as in GET operations, the procedure parameters are automatically added as @FormParam annotations on the generated procedure. A client invoking this service must use FORM to post the values for the parameters. The FORM field names MUST match the names of the procedure parameters names.
 
-If any one of the procedure parameters are BLOB, CLOB or XML type, then POST operation can be only invoked using "multipart/form-data" https://www.ietf.org/rfc/rfc2388.txt[RFC-2388] protocol. This allows user to upload large binary or XML files efficiently to Teiid using streaming".
+If any one of the procedure parameters are BLOB, CLOB or XML type, then POST operation can be only invoked using "multipart/form-data" https://www.ietf.org/rfc/rfc2388.txt[RFC-2388] protocol. This allows user to upload large binary or XML files efficiently to {{ book.productnameFull }} using streaming".
 
 *"VARBINARY type"*
 
@@ -118,7 +117,6 @@ By default all the generated Rest based services are secured using "HTTPBasic" w
 </vdb>
 ----
 
-* _auto-generate - will automatically generate the WAR file for the deployed VDB
 * _security-type_ - defines the security type. allowed values are "HttpBasic" or "none". If omitted will default to "HttpBasic"
 * _security-domain_ - defines JAAS security domain to be used with HttpBasic. If omitted will default to "teiid-security"
 * _security-role_ - security role that HttpBasic will use to authorize the users. If omitted the value will default to "rest"
@@ -127,7 +125,11 @@ NOTE: *rest-security* - it is our intention to provide other types of securities
 
 == Special Ad-Hoc Rest Services
 
-Apart from the explicitly defined procedure based rest services, the generated jax-rs war file will also implicitly include a special rest based service under URI "/query" that can take any XML or JSON producing SQL as parameter and expose the results of that query as result of the service. This service is defined with "POST", accepting a Form Parameter named "sql". For example, after you deploy the VDB defined in above example, you can issue a HTTP POST call as
+Apart from the explicitly defined procedure based rest services, the generated jax-rs war file can also include a special rest based service under URI "/query" that can take any XML or JSON producing SQL as parameter and expose the results of that query as result of the service.
+
+The model/schema must be have the {http://teiid.org/rest}security-role property set to true to expose the procedure.
+
+This service is defined with "POST", accepting a Form Parameter named "sql". For example, after you deploy the VDB defined in above example, you can issue a HTTP POST call as
 
 [source,xml]
 ----

@@ -3,18 +3,25 @@ language: node_js
     
 install:
     - npm install -g gitbook-cli
+    - cd wildfly
     - gitbook install
-    - sudo -v && wget -nv -O- https://download.calibre-ebook.com/linux-installer.py | sudo python -c "import sys; main=lambda:sys.stderr.write('Download failed\n'); exec(sys.stdin.read()); main()"
+    - cd ..
+    - cd spring
+    - gitbook install
+    - cd ..
+    - wget https://download.calibre-ebook.com/3.48.0/calibre-3.48.0-x86_64.txz
+    - sudo mkdir -p /opt/calibre && sudo rm -rf /opt/calibre/* && sudo tar xvf calibre-3.48.0-x86_64.txz -C /opt/calibre && sudo /opt/calibre/calibre_postinstall
     
 script: 
-    - gitbook build ./ content
-    - gitbook pdf ./ teiid-documents.pdf
+    - gitbook build wildfly content
+    - gitbook pdf wildfly teiid-documents.pdf
+    - gitbook build spring sb
 
 after_success: |
     if [ -n "$GITHUB_API_KEY" ]; then
     git checkout --orphan $TRAVIS_BRANCH-gh-pages
     git rm -rf .
-    git add -f --ignore-errors --all content teiid-documents.pdf
+    git add -f --ignore-errors --all sb content teiid-documents.pdf
     git -c user.name='travis' -c user.email='travis' commit -m 'ci publishing'
     git push -f -q https://$GITHUB_USER:$GITHUB_API_KEY@github.com/$TRAVIS_REPO_SLUG $TRAVIS_BRANCH-gh-pages
     git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*" 1>/dev/null
@@ -25,7 +32,9 @@ after_success: |
     git -c user.name='travis' -c user.email='travis' commit -am "adding submodule"
     git push -q https://$GITHUB_USER:$GITHUB_API_KEY@github.com/$TRAVIS_REPO_SLUG gh-pages
     fi
-    git submodule update --init --remote --no-fetch
+    git submodule update --init --remote --no-fetch $TRAVIS_BRANCH
+    git pull
+    git submodule update --remote --no-fetch --merge
     git -c user.name='travis' -c user.email='travis' commit -am "updating submodules"
     git push -q https://$GITHUB_USER:$GITHUB_API_KEY@github.com/$TRAVIS_REPO_SLUG gh-pages
     fi

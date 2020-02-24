@@ -1,7 +1,7 @@
 
 = Metadata Repositories
 
-Traditionally the metadata for a Virtual Database is built by Teiid Designer and supplied to Teiid engine through a VDB archive file. This VDB file contains .INDEX metadata files. By default they are loaded by a _MetadataRepository_ with the name _INDEX_. Other built-in metadata repositories include the following:
+Traditionally the metadata for a Virtual Database is supplied to {{ book.productnameFull }} engine through a VDB archive file. A number of _MetadataRepository_ instances contribute to the loading of the metadata.  Built-in metadata repositories include the following:
 
 == NATIVE
 
@@ -35,7 +35,7 @@ This is only applicable on source models (and is also the default), when used th
 
 This is applicable to both source and view models. See link:DDL_Metadata.adoc[DDL Metadata] for more information on how to use this feature.
 
-== FILE
+== DDL-FILE
 
 [source,xml]
 .*Sample vdb.xml file*
@@ -49,6 +49,31 @@ This is applicable to both source and view models. See link:DDL_Metadata.adoc[DD
 ----
 
 DDL is applicable to both source and view models in zip VDB deployments. See link:DDL_Metadata.adoc[DDL Metadata] for more information on how to use this feature.
+
+== UDF (11.2+)
+
+[source,xml]
+.*Sample vdb.xml file*
+----
+<vdb name="{vdb-name}" version="1">
+    <model name="{model-name}" type="VIRTUAL">
+        <property name="importer.schemaName" value="org.foo.Class"/>
+        <metadata type="UDF"></metadata>
+    </model>
+</vdb>
+----
+
+[source,ddl]
+.*Sample ddl file*
+----
+CREATE DATABASE {vdb-name} VERSION '1';
+USE DATABASE {vdb-name} VERSION '1';
+CREATE VIRTUAL SCHEMA {model-name};
+IMPORT FOREIGN SCHEMA "org.foo.Class" FROM REPOSITORY UDF INTO {model-name};
+----
+
+The logic will import all static functions that return non-void results, or import the user defined aggregate function if
+the class implements the UserDefinedAggregate interface.
 
 == Chaining Repositories
 

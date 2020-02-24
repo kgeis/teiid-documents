@@ -1,11 +1,11 @@
 
 = Salesforce Data Sources
 
-Salesforce data sources use a Teiid specific JCA connector that is deployed into {{ book.asVersionNumber }} during installation. There are three versions of the salesforce resource adapter - salesforce, which currently provides connectivity to the 22.0 Salesforce API, salesforce-34, which provides connectivity to the 34.0 Salesforce API, and salesforce-41. The version 22.0 support has been deprecated.
+Salesforce data sources use a {{ book.productnameFull }} specific JCA connector that is deployed into {{ book.asVersionNumber }} during installation. There are three versions of the salesforce resource adapter - salesforce, which currently provides connectivity to the 34.0 Salesforce API, salesforce-34, which provides connectivity to the 34.0 Salesforce API, and salesforce-41 which actually provides access to 37.0 through at least 45.0. The version 22.0 support has been removed.
 
 NOTE: If you need connectivity to an API version other than what is built in, you may try to use an existing connectivity pair, but in some circumstances - especially accessing a later remote api from an older java api - this is not possible and results in what appears to be hung connections.  Please raise an issue if you cannot successfully access a specific API version.
 
-There are many ways to create the salesforce data source, using CLI,link:AdminShell.adoc[AdminShell], admin-console etc. The example shown below uses the CLI tool, as this works in both Standalone and Domain modes.
+There are many ways to create the salesforce data source, using CLI,link:../dev/AdminAPI.adoc[AdminAPI], admin-console etc. The example shown below uses the CLI tool, as this works in both Standalone and Domain modes.
 
 Execute following command using the {{ book.asDocRoot }}/Admin+Guide#AdminGuide-RunningtheCLI[CLI] once you connected to the Server. Make sure you provide the correct URL and user credentials. Add any additional properties required by the connector by duplicating the "connection-definitions" command below. Edit the JNDI name to match the JNDI name you used in VDB.
 
@@ -13,14 +13,16 @@ Execute following command using the {{ book.asDocRoot }}/Admin+Guide#AdminGuide-
 ----
 batch
 /subsystem=resource-adapters/resource-adapter=salesforce/connection-definitions=sfDS:add(jndi-name=java:/sfDS, class-name=org.teiid.resource.adapter.salesforce.SalesForceManagedConnectionFactory, enabled=true, use-java-context=true)
-/subsystem=resource-adapters/resource-adapter=salesforce/connection-definitions=sfDS/config-properties=URL:add(value=https://login.salesforce.com/services/Soap/u/22.0)
+/subsystem=resource-adapters/resource-adapter=salesforce/connection-definitions=sfDS/config-properties=URL:add(value=https://login.salesforce.com/services/Soap/u/34.0)
 /subsystem=resource-adapters/resource-adapter=salesforce/connection-definitions=sfDS/config-properties=username:add(value={user})
 /subsystem=resource-adapters/resource-adapter=salesforce/connection-definitions=sfDS/config-properties=password:add(value={password})
 /subsystem=resource-adapters/resource-adapter=salesforce:activate
 runbatch
 ----
 
-The salesforce-xx connection definition configuration is similar to the above. The resource adapter name would instead be salesforce-xx, and the url would point to a later version.
+The salesforce-xx connection definition configuration is similar to the above. The resource adapter name would instead be salesforce-xx, and the url would point to a later version.  It is recommended to set the url explicitly.  The -34 resource adapter defaults to https://login.salesforce.com/services/Soap/u/34.0, and the -41 resource adapter defaults to https://login.salesforce.com/services/Soap/u/40.0 
+
+NOTE: that if you access a newer Salesforce API version than the resource adapter supports, you will receive low level metadata parsing exceptions - you can either access an older API or log an issue to have updated support. 
 
 To find out all the properties that are supported by this Salesforce Connector execute the following command in the CLI.
 
@@ -63,7 +65,7 @@ If you need to connect to Salesforce using Mutual Authentication, follow the dir
 
 more information about CXF configuration file can be found at http://cxf.apache.org/docs/client-http-transport-including-ssl-support.html#ClientHTTPTransport(includingSSLsupport)-ConfiguringSSLSupport[http://cxf.apache.org/docs/client-http-transport-including-ssl-support.html#ClientHTTPTransport(includingSSLsupport)-ConfiguringSSLSupport]
 
-h== OAuth Security with "Refresh Token"
+== OAuth Security with "Refresh Token"
 
 The below layout the directions to use Refresh Token based OAuth Authentication with Salesforce.
 
@@ -111,11 +113,11 @@ The below layout the directions to use JWT token based OAuth Authentication with
 
 
 1) Create a Self-Signed certificate locally or on Sales Force. (user->setup->security-controls->Certificate and Key Management)
-2) Download the certificate and also put in keystore and download keystore. Keystore is needed for Teiid, certificate for the salesforce setup
+2) Download the certificate and also put in keystore and download keystore. Keystore is needed for {{ book.productnameFull }}, certificate for the salesforce setup
 3) Create connected app and select OAuth, and select all the scopes (some posts say refresh-token offline is must)
 4) create a profile and/or permission set assign to the connected app. I believe before you can create a connected app you need to set up custom domain
 5) When you creating connected app make sure you add the certificate in "Digital Certificate"
-6) Now in Teiid create security-domain by executing CLI
+6) Now in {{ book.productnameFull }} create security-domain by executing CLI
 
 ----
 /subsystem=security/security-domain=oauth2-jwt-security:add(cache-type=default)

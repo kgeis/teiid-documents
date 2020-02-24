@@ -3,7 +3,7 @@
 
 Identifiers, literals, and functions can be combined into expressions. Expressions can be used almost anywhere in a query – SELECT, FROM (if specifying join criteria), WHERE, GROUP BY, HAVING, or ORDER BY.
 
-Teiid supports the following types of expressions:
+{{ book.productnameFull }} supports the following types of expressions:
 
 * link:Expressions.adoc#_column_identifiers[Column Identifiers]
 * link:Expressions.adoc#_literals[Literals]
@@ -128,10 +128,12 @@ Either way the string literal value portion of the expression is expected to fol
 
 Aggregate functions take sets of values from a group produced by an explicit or implicit GROUP BY and return a single scalar value computed from the group.
 
-Teiid supports the following aggregate functions:
+{{ book.productnameFull }} supports the following aggregate functions:
 
 * COUNT(*) – count the number of values (including nulls and duplicates) in a group. Returns an integer - an exception will be thrown if a larger count is computed.
 * COUNT(x) – count the number of values (excluding nulls) in a group. Returns an integer - an exception will be thrown if a larger count is computed.
+* COUNT_BIG(*) – count the number of values (including nulls and duplicates) in a group. Returns a long - an exception will be thrown if a larger count is computed.
+* COUNT_BIG(x) – count the number of values (excluding nulls) in a group. Returns a long - an exception will be thrown if a larger count is computed.
 * SUM(x) – sum of the values (excluding nulls) in a group
 * AVG(x) – average of the values (excluding nulls) in a group
 * MIN(x) – minimum value in a group (excluding null)
@@ -183,6 +185,22 @@ could return
 'a,b,c'
 ----
 
+* LIST_AGG(x [, delim]) WITHIN GROUP (ORDER BY ...) – a form of STRING_AGG that uses the same syntax as Oracle.  Here x can be any type convertable to string, the delim if specified must be a literal, and the order by is required.  This is just a parsing alias for an equivalent string_agg expression.
+
+list agg example
+
+[source,sql]
+----
+listagg(col1, ',') WITHIN GROUP (ORDER BY col1 ASC)
+----
+
+could return
+
+[source,sql]
+----
+'a,b,c'
+----
+
 * ARRAY_AGG(x [link:ORDER_BY_Clause.html[ORDER BY …]]) – creates an array with a base type matching the expression x. The ORDER BY clause cannot reference alias names or use positional ordering.
 * agg([DISTINCT|ALL] arg … [link:ORDER_BY_Clause.html[ORDER BY …]]) – a user defined aggregate function
 
@@ -205,50 +223,83 @@ For more information on aggregates, see the sections on GROUP BY or HAVING.
 
 == Window Functions
 
-Teiid supports ANSI SQL 2003 window functions. A window function allows an aggregate function to be applied to a subset of the result set, without the need for a GROUP BY clause. A window function is similar to an aggregate function, but requires the use of an OVER clause or window specification.
+{{ book.productnameFull }} supports ANSI SQL 2003 window functions. A window function allows an aggregate function to be applied to a subset of the result set, without the need for a GROUP BY clause. A window function is similar to an aggregate function, but requires the use of an OVER clause or window specification.
 
 Usage:
 
 [source,sql]
 ----
-aggregate|ranking OVER ([PARTITION BY ...]] [ORDER BY ...])
+  aggregate [FILTER (WHERE ...)] OVER ( [partition] [ORDER BY ...] [frame] )
+| FIRST_VALUE(val) OVER ( [partition] [ORDER BY ...] [frame] )
+| LAST_VALUE(val) OVER ( [partition] [ORDER BY ...] [frame] )
+| analytical OVER ( [partition] [ORDER BY ...] )
+
+partition := PARTITION BY expression [, expression]*
+
+frame := range_or_rows extent
+
+range_or_rows := RANGE | ROWS
+
+extent := 
+    frameBound 
+  | BETWEEN frameBound AND frameBound
+
+frameBound := 
+    UNBOUNDED PRECEDING 
+  | UNBOUNDED FOLLOWING
+  | n PRECEDING 
+  | n FOLLOWING
+  | CURRENT ROW
+
 ----
 
-aggregate can be any link:Expressions.adoc#_aggregate_functions[Aggregate Functions]. Ranking can be one of ROW_NUMBER(), RANK(), DENSE_RANK().
+aggregate can be any link:Expressions.adoc#_aggregate_functions[Aggregate Functions]. Keywords exist for the analytical functions  ROW_NUMBER, RANK, DENSE_RANK, PERCENT_RANK, CUME_DIST.  There are also the FIRST_VALUE, LAST_VALUE, LEAD, LAG, NTH_VALUE, and NTILE analytical functions.
 
 Syntax Rules:
 
 * Window functions can only appear in the SELECT and ORDER BY clauses of a query expression.
 * Window functions cannot be nested in one another.
 * Partitioning and order by expressions cannot contain subqueries or outer references.
-* The ranking (ROW_NUMBER, RANK, DENSE_RANK) functions require the use of the window specification ORDER BY clause.
-* An XMLAGG or JSONARRAY_AGG ORDER BY clause cannot be used when windowed.
+* An aggregate ORDER BY clause cannot be used when windowed.
 * The window specification ORDER BY clause cannot reference alias names or use positional ordering.
 * Windowed aggregates may not use DISTINCT if the window specification is ordered.
-* Analytical value functions may not use DISTINCT and require the use of an ordering in the window specification. 
+* Analytical value functions may not use DISTINCT and require the use of an ordering in the window specification.
+* RANGE or ROWS requires the ORDER BY clause to be specified.  The default frame if not specified is RANGE UNBOUNDED PRECEDING.  If no end is specified the default is CURRENT ROW.  No combination of start and end is allowed such that the end is before the start - for example UNBOUNDED FOLLOWING is not allow as a start nor is UNBOUNDED PRECEDING allowed as an end.
+* RANGE cannot be used n PRECEDING or n FOLLOWING
 
 == Analytical Function Definitions
 
 Ranking Functions:
 
-* ROW_NUMBER() – functional the same as COUNT(*) with the same window specification. Assigns a number to each row in a partition starting at 1.
 * RANK() – Assigns a number to each unique ordering value within each partition starting at 1, such that the next rank is equal to the count of prior rows.
 * DENSE_RANK() – Assigns a number to each unique ordering value within each partition starting at 1, such that the next rank is sequential.
+* PERCENT_RANK() – Computed as (RANK - 1) / ( RC - 1) where RC is the total row count of the partition. 
+* CUME_DIST() – Computed as the PR / RC where PR is the rank of the row including peers and RC is the total row count of the partition.
 
-All values are integers - an exception will be thrown if a larger value is needed.
+By default all values are integers - an exception will be thrown if a larger value is needed.  Use the system org.teiid.longRanks to have RANK, DENSE_RANK, and ROW_NUMBER return long values instead. 
 
 Value Functions:
 
-* FIRST_VALUE(val) – Return the first value in the window with the given ordering
-* LAST_NUMBER(val) – Return the last observed value in the window with the given ordering
+* FIRST_VALUE(val) – Return the first value in the window frame with the given ordering
+* LAST_VALUE(val) – Return the last observed value in the window frame with the given ordering
 * LEAD(val [, offset [, default]]) - Access the ordered value in the window that is offset rows ahead of the current row.  If there is no such row, then the default value will be returned.  If not specified the offset is 1 and the default is null.
 * LAG(val [, offset [, default]]) - Access the ordered value in the window that is offset rows behind of the current row.  If there is no such row, then the default value will be returned.  If not specified the offset is 1 and the default is null.
+* NTH_VALUE(val, n) - Returns the nth val in window frame.  The index must be greater than 0.  If no such value exists, then null is returned. 
+
+Row Value Functions:
+
+* ROW_NUMBER() – Sequentially assigns a number to each row in a partition starting at 1.
+* NTILE(n) – Divides the partition into n tiles that differ in size by at most 1.  Larger tiles will be created sequentially starting at the first.  n must be greater than 0.
 
 == Processing
 
 Window functions are logically processed just before creating the output from the SELECT clause. Window functions can use nested aggregates if a GROUP BY clause is present. The is no guaranteed affect on the output ordering from the presence of window functions. The SELECT statement must have an ORDER BY clause to have a predictable ordering.
 
-Teiid will process all window functions with the same window specification together. In general a full pass over the row values coming into the SELECT clause will be required for each unique window specification. For each window specification the values will be grouped according to the PARTITION BY clause. If no PARTITION BY clause is specified, then the entire input is treated as a single partition. The output value is determined based upon the current row value, it’s peers (that is rows that are the same with respect to their ordering), and all prior row values based upon ordering in the partition. The ROW_NUMBER function will assign a unique value to every row regardless of the number of peers.
+NOTE: An ORDER BY in the OVER clause follows the same rules pushdown and processing rules as a top level ORDER BY.  In general this means you should specify NULLS FIRST/LAST as null handling may differ between engine and pushdown processing.  Also see the system properties controlling sort behavior if you different default behavior. 
+
+{{ book.productnameFull }} will process all window functions with the same window specification together. In general a full pass over the row values coming into the SELECT clause will be required for each unique window specification. For each window specification the values will be grouped according to the PARTITION BY clause. If no PARTITION BY clause is specified, then the entire input is treated as a single partition. 
+
+The frame for the output value is determined based upon the definition of the analytical function or the ROWS/RANGE clause.  The default frame is RANGE UNBOUNDED PRECEDING, which also implies the default end bound of CURRENT ROW.  RANGE computes over a row and its peers together.  ROWS computes over every row.  Most analytical functions, such as ROW_NUMBER, has an implicit RANGE/ROWS - which is why a different one cannot be specified.  For example ROW_NUMBER() OVER (order) can be expressed instead as count(*) OVER (order ROWS UNBOUNDED PRECEDING AND CURRENT ROW) - thus it assigns a different value to every row regardless of the number of peers.
 
 [source,sql]
 .*Example Windowed Results*
@@ -299,7 +350,7 @@ SELECT name, salary, max(salary) over (partition by name) as max_sal,
 
 == Case and Searched Case
 
-Teiid supports two forms of the CASE expression which allows conditional logic in a scalar expression.
+{{ book.productnameFull }} supports two forms of the CASE expression which allows conditional logic in a scalar expression.
 
 Supported forms:
 
@@ -367,7 +418,7 @@ the same as the array_get system function and expects 1-based indexing.
 
 == Operator Precedence
 
-Teiid parses and evaluates operators with higher precedence before those with lower precedence. Operator with equal precedence are left associative. Operator precedence listed from high to low:
+{{ book.productnameFull }} parses and evaluates operators with higher precedence before those with lower precedence. Operator with equal precedence are left associative. Operator precedence listed from high to low:
 
 |===
 |Operator |Description

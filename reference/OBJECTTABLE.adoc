@@ -12,7 +12,10 @@ OBJECTTABLE([LANGUAGE lang] rowScript [PASSING val AS name ...] COLUMNS colName 
 
 Parameters
 
-* lang - an optional string literal that is the case sensitive language name of the scripts to be processed. The script engine must be available via a JSR-223 ScriptEngineManager lookup. In some instances this may mean making additional modules available to your vdb, which can be done via the same process as adding modules/libraries link:../dev/Support_for_User-Defined_Functions_Non-Pushdown.adoc[for UDFs]. If a LANGUAGE is not specified, the default of 'teiid_script' (see below) will be used.
+* lang - an optional string literal that is the case sensitive language name of the scripts to be processed. The script engine must be available via a JSR-223 ScriptEngineManager lookup. {% if book.targetWildfly %}
+In some instances this may mean making additional modules available to your vdb, which can be done via the same process as adding modules/libraries link:../dev/Support_for_User-Defined_Functions_Non-Pushdown.adoc[for UDFs].
+{% endif %}
+If a LANGUAGE is not specified, the default of 'teiid_script' (see below) will be used.
 * name - an identifier that will bind the val expression value into the script context.
 * rowScript is a string literal specifying the script to create the row values. for each non-null item the Iterator produces the columns will be evaluated.
 * colName/colType are the id/data type of the column, which can optionally be defaulted with the DEFAULT clause expression defaultExpr.
@@ -21,7 +24,7 @@ Parameters
 Syntax Rules:
 
 * The columns names must be not contain duplicates.
-* Teiid will place several special variables in the script execution context. The CommandContext is available as teiid_context. Additionally the colScripts may access teiid_row and teiid_row_number.  teiid_row is the current row object produced by the row script.  teiid_row_number is the current 1-based row number.
+* {{ book.productnameFull }} will place several special variables in the script execution context. The CommandContext is available as teiid_context. Additionally the colScripts may access teiid_row and teiid_row_number.  teiid_row is the current row object produced by the row script.  teiid_row_number is the current 1-based row number.
 * rowScript is evaluated to an Iterator. If the results is already an Iterator, it is used directly. If the evaluation result is an Iteratable, Array, or Array type, then an Iterator will be obtained. Any other Object will be treated as an Iterator of a single item). In all cases null row values will be skipped.
 
 NOTE: While there is no restriction what can be used as a PASSING variable names you should choose names that can be referenced as identifiers in the target language.
@@ -39,7 +42,7 @@ The result would be a row with two columns containing the user name and 1 respec
 
 NOTE: Due to their mostly unrestricted access to Java functionality, usage of languages other than teiid_script is restricted by default. A VDB must declare all allowable languages by name in the allowed-languages link:vdb_properties.adoc[VDB Properties] using a comma separated list. The names are case sensitive names and should be separated without whitespace.  Without this property it is not possible to use OBJECTTABLE even from within view definitions that are not subject to normal permission checks.
 
-Data roles are also secured with link:XML_Definition.adoc[Data Roles] using the link:Permissions.adoc[language permission].
+Data roles can define the link:Permissions.adoc[language permission].
 
 *teiid_script*
 

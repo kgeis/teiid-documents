@@ -2,8 +2,10 @@
 
 Domains are simple type declarations that define a set of valid values for a given type name.  They can be created at the database level only.
 
+{% if book.targetWildfly %}
 The DDL for domains is common to both link:xml_deployment_mode.adoc[XML] and link:ddl_deployment_mode.adoc[DDL] VDBs.  
-However in an XML vdb domains must be defined in a VDB property "domain-ddl". 
+However in an XML vdb domains must be defined in a VDB property "domain-ddl".
+{% endif %} 
 
 == Create Domain
 
@@ -30,6 +32,7 @@ CREATE VIEW v1 (col1 mychar) as select 'value';
 ...
 ----
 
+{% if book.targetWildfly %}
 XML VDB Example
 [source,xml]
 ----
@@ -38,6 +41,7 @@ XML VDB Example
     <property name="domain-ddl" value="CREATE DOMAIN ssn AS VARCHAR(9); CREATE DOMAIN myint AS integer not null;" />
     ...
 ----
+{% endif %}
 
 When the system metadata is queried the type for the column will be shown as the domain name.
 

@@ -1,17 +1,23 @@
 
+[id="client-dev-OData4_Support-OData-Version-40-Support"]
 = OData Version 4.0 Support
+:toc: manual
+:toc-placement: preamble
 
-Teiid strives to be compliant with the OData specification.  The rest of this chapter highlight some specifics of OData and Teiid's support, but you should also consult http://www.odata.org/documentation/[the specification].
+{{ book.productnameFull }} strives to be compliant with the OData specification.  The rest of this chapter highlight some specifics of OData and {{ book.productnameFull }}'s support, but you should also consult http://www.odata.org/documentation/[the specification].
 
+[id="client-dev-OData4_Support-How-to-Access-the-data"]
 == How to Access the data?
 
 For example, if you have a vdb by name _northwind_ deployed that has a _customers_ table in a _NW_ model, then you can access that table with an HTTP GET via the URL:
 
-NOTE: The user "MUST" have a role called "odata" to access odata endpoint. When adding a user with "bin/add-user.sh" script make sure this role is added to the user, who is going to use the endpoint.
+{% if book.targetWildfly %}
+All users are granted an odata role by default, which allows all authenticated users to access odata end points.  In previous versions of Teiid this role had to be manually assigned.  If you still want that behavior remove the Identity login module from the teiid-security security domain that is granting the odata role.
+{% endif %}
 
-[source,xml]
+[source]
 ----
-http://localhost:8080/odata/northwind/NW/customers
+http://localhost:8080/{{ book.odataContext }}/customers
 ----
 
 this would be akin to making a JDBC/ODBC connection and issuing the SQL:
@@ -25,36 +31,37 @@ NOTE: Use correct case (upper or lower) in the resource path.  Unlike SQL, the n
 
 The returned results from OData query can be in Atom/AtomPub XML or JSON format. JSON results are returned by default.
 
+[id="client-dev-OData4_Support-Query-Basics"]
 == Query Basics
 
 Users can submit predicates with along their query to filter the results:
 
-[source,xml]
+[source]
 ----
-http://localhost:8080/odata/northwind/NW/customers?$filter=name eq 'bob'
+http://localhost:8080/{{ book.odataContext }}/customers?$filter=name eq 'bob'
 ----
 
 NOTE: Spaces around 'eq' are for readability of the example only; in real URLs they must be percent-encoded as %20. OData mandates percent encoding for all spaces in URLs. http://docs.oasis-open.org/odata/odata/v4.0/odata-v4.0-part2-url-conventions.html
 
 this would be similar to making a JDBC/ODBC connection and issuing the SQL
 
-[source,xml]
+[source]
 ----
 SELECT * FROM NW.customers where name = 'bob'
 ----
 
 To request the result to be formatted in a specific format, add the query option $format
 
-[source,xml]
+[source]
 ----
-http://localhost:8080/odata/northwind/NW/customers?$format=JSON
+http://localhost:8080/{{ book.odataContext }}/customers?$format=JSON
 ----
 
 Query options can be combined as needed. For example format with a filter:
 
-[source,xml]
+[source]
 ----
-http://localhost:8080/odata/northwind/NW/customers?$filter=name eq 'bob'&$format=xml
+http://localhost:8080/{{ book.odataContext }}/customers?$filter=name eq 'bob'&$format=xml
 ----
 
 OData allows for querying navigations from one entity to another. A navigation is similar to the foreign key relationships in relational databases. 
@@ -63,7 +70,7 @@ For example, if the _customers_ table has an exported key to the _orders_ table 
 
 [source,xml]
 ----
-http://localhost:8080/odata/northwind/NW/customers(1234)/customer_fk?$filter=orderdate gt datetime'2012-12-31T21:23:38Z'
+http://localhost:8080/{{ book.odataContext }}/customers(1234)/customer_fk?$filter=orderdate gt datetime'2012-12-31T21:23:38Z'
 ----
 
 this would be akin to making a JDBC/ODBC connection and issuing the SQL:
@@ -75,22 +82,25 @@ SELECT o.* FROM NW.orders o join NW.customers c on o.customer_id = c.id where c.
 
 NOTE: *More Comprehensive Documentation about ODATA* - For detailed protocol access you can read the specification at http://odata.org[http://odata.org]. You can also read this very useful web resource http://msdn.microsoft.com/en-us/library/ff478141.aspx[for an example] of accessing an OData server.
 
+[id="client-dev-OData4_Support-How-to-execute-a-stored-procedure"]
 === How to execute a stored procedure?
 Odata allows you to call your exposed stored procedure methods via odata.
 
 ----
-http://localhost:8080/odata4/northwind/NW/getcustomersearch(id=120,firstname='micheal')
+http://localhost:8080/{{ book.odataContext }}/getcustomersearch(id=120,firstname='micheal')
 ----
 
+[id="client-dev-OData4_Support-Not-seeing-all-the-rows"]
 === Not seeing all the rows?
 
 See the link:#_configuration[configuration section] below for more details. Generally batching is being utilized, which tooling should understand automatically, and additional queries with a $skiptoken query option specified are needed:
 
 [source,xml]
 ----
-http://localhost:8080/odata/northwind/NW/customers?$skiptoken=xxx
+http://localhost:8080/{{ book.odataContext }}/customers?$skiptoken=xxx
 ----
 
+[id="client-dev-OData4_Support-EntitySet-Not-Found-error"]
 === "EntitySet Not Found" error?
 
 When you issue the above query are you seeing a message similar to below?
@@ -104,6 +114,7 @@ Then, it means that either you supplied the model-name/table-name combination wr
 
 It is possible that the entity is not part of the link:#_odata_metadata[metadata], such as when a table does not have any PRIMARY KEY or UNIQUE KEY(s).
 
+[id="client-dev-OData4_Support-How-to-update-your-data"]
 == How to update your data?
 
 Using the OData protocol it is possible to perform CREATE/UPDATE/DELETE operations along with READ operations shown above. These operations use different HTTP methods.
@@ -147,7 +158,7 @@ Accept: application/json
 
 The DELETE operation uses the HTTP "DELETE" method.
 
-[source,xml]
+[source]
 .*Example Delete*
 ----
 DELETE /service.svc/Customers('ALFKI') HTTP/1.1
@@ -156,16 +167,34 @@ Content-Type: application/json
 Accept: application/json
 ----
 
+{% if book.targetWildfly %}
+[id="client-dev-OData4_Support-Security"]
 == Security
 
-By default OData access is secured using HTTPBasic authentication. The user will be authenticated against Teiid’s default security domain "teiid-security". Users are expected to have the *odata* role. Be sure to create user with this role when you are using add-user.sh script to create a new user.
+By default OData access is secured using HTTPBasic authentication. The user will be authenticated against {{ book.productnameFull }}’s default security domain "teiid-security".
 
 However, if you wish to change the security domain use a deployment-overlay to override the _web.xml_ file in the odata4 file in the _<modules>/org/jboss/teiid/main/deployments_ directory. 
 
 OData WAR can also support Kerberos, SAML and OAuth2 authentications, for configuring the these security schemes please see link:../security/Security_Guide.adoc[Security Guide]
+{% endif %}
 
+[id="client-dev-OData4_Support-Configuration"]
 == Configuration
 
+{% if book.targetSpring %}
+The OData interfaces supports some customization via properties prefixed with "spring.teiid.odata.".
+
+|batch-size
+|Number of rows to send back each time, -1 returns all rows
+|256
+
+|skiptoken-cache-time
+|Time interval between the results being recycled/expired between $skiptoken requests
+|300000
+
+
+{% endif %}
+{% if book.targetWildfly %}
 The OData WAR file can be configured with following properties in the web.xml file.
 
 |===
@@ -184,7 +213,7 @@ The OData WAR file can be configured with following properties in the web.xml fi
 |
 
 |local-transport-name
-|Teiid Local transport name for connection
+|{{ book.productnameFull }} Local transport name for connection
 |odata
 
 |invalid-xml10-character-replacement
@@ -192,15 +221,20 @@ The OData WAR file can be configured with following properties in the web.xml fi
 |
  
 |proxy-base-uri
-|Defines the proxy server’s URI to be used in OData responses.
+|Defines the proxy server’s URI to be used in OData responses.  Only needs to be set if your proxy does not support the Forwarded nor the X-Forwarded headers.
 |n/a
 
 |connection.XXX
 |Sets XXX as an execution property on the local connection. Can be used for example to enable result set cache mode.
 |n/a
+
+|explicit-vdb-version
+|When explicit-vdb-version is true, an explicit vdb version needs to be part of the url to use anything other than the default version 1 vdb.  When explicit-vdb-version is false, the odata vdb version will be determined just like a JDBC connection.
+|true
+
 |===
 
-NOTE: *"Behind Proxy or In Cloud Environments?"* - If the Teiid server is configured behind a proxy server or deployed in cloud environment, or using a load-balancer then the URI of the server which is handling the OData request is different from URI of proxy. To generate valid links in the OData responses configure "proxy-base-uri" property in the web.xml. If this value is available as system property then define the property value like below
+NOTE: *"Behind Proxy or In Cloud Environments?"* - If the {{ book.productnameFull }} server is configured behind a proxy server or deployed in cloud environment, or using a load-balancer that does not support the Forwarded nor X-Forwarded headers, then the URI of the server which is handling the OData request is different from URI of proxy. To generate valid links in the OData responses configure "proxy-base-uri" property in the web.xml. If this value is available as system property then define the property value like below
 
 [source,xml]
 ----
@@ -216,9 +250,11 @@ To modify the web.xml, create a {{ book.asDocRoot }}/Deployment+Overlays[deploym
 ----
 deployment-overlay add --name=myOverlay --content=/WEB-INF/web.xml=/modified/web.xml --deployments=teiid-odata-odata4.war --redeploy-affected
 ----
+{% endif %}
 
-Teiid OData server, implements cursoring logic when the result rows exceed the configured batch size. On every request, only _batch-size_ number of rows are returned. Each such request is considered an active cursor, with a specified amount of idle time specified by _skip-token-cache-time_. After the cursor is timed out, the cursor will be closed and remaining results will be cleaned up, and will no longer be available for further queries. Since there is no session based tracking of these cursors, if the request for skiptoken comes after the expired time, the original query will be executed again and tries to reposition the cursor to relative absolute potion, however the results are not guaranteed to be same as the underlying sources may have been updated with new information meanwhile.
+{{ book.productnameFull }} OData server implements cursoring logic when the result rows exceed the configured batch size. On every request, only _batch-size_ number of rows are returned. Each such request is considered an active cursor, with a specified amount of idle time specified by _skip-token-cache-time_. After the cursor is timed out, the cursor will be closed and remaining results will be cleaned up, and will no longer be available for further queries. Since there is no session based tracking of these cursors, if the request for skiptoken comes after the expired time, the original query will be executed again and tries to reposition the cursor to relative absolute position, however the results are not guaranteed to be same as the underlying sources may have been updated with new information meanwhile.
 
+[id="client-dev-OData4_Support-Limitations"]
 == Limitations
 
 The following feature limitations currently apply.
@@ -228,6 +264,7 @@ The following feature limitations currently apply.
 * data-aggregation extension to specification is not supported.
 * $it usage is limited to only primitive collection properties
 
+[id="client-dev-OData4_Support-Client-Tools-for-Access"]
 == Client Tools for Access
 
 OData access is really where the user comes in, depending upon your programming model and needs there are various ways you write your access layer into OData. The following are some suggestions:
@@ -240,16 +277,17 @@ OData access is really where the user comes in, depending upon your programming 
 
 For latest information other frameworks and tools available please see http://www.odata.org/ecosystem/
 
-== OData Metadata (How Teiid interprets the relational schema into OData's $metadata)
+[id="client-dev-OData4_Support-OData-Metadata-How-bookproductnameFull-interprets-the-relational-schema-into-ODatas-metadata"]
+== OData Metadata (How {{ book.productnameFull }} interprets the relational schema into OData's $metadata)
 
-OData defines its schema using Conceptual Schema Definition Language (CSDL). Every VDB, that is deployed in an ACTIVE state in Teiid server exposes its metadata in CSDL format. For example if you want retrieve metadata for your vdb _northwind_, you need to issue a query like
+OData defines its schema using Conceptual Schema Definition Language (CSDL). A VDB in an ACTIVE state in {{ book.productnameFull }} exposes its visible metadata in CSDL format. For example if you want retrieve metadata for your vdb, you need to issue a request like:
 
-[source,xml]
+[source]
 ----
-http://localhost:8080/odata/northwind/NW/$metadata
+http://localhost:8080/{{ book.odataContext }}/$metadata
 ----
 
-Since OData schema model is not a relational schema model, Teiid uses the following semantics to map its relational schema model to OData schema model.
+Since OData schema model is not a relational schema model, {{ book.productnameFull }} uses the following semantics to map its relational schema model to OData schema model.
 
 |===
 |Relational Entity |Mapped OData Entity
@@ -270,12 +308,88 @@ Since OData schema model is not a relational schema model, Teiid uses the follow
 |Navigation Property on EntityType
 
 |Procedure
-|FunctionImport, Action Import
+|FunctionImport, ActionImport
 
 |Procedure’s Table Return
 |ComplexType
 |===
 
-Teiid by design does not define any "embedded" ComplexType in the EntityType.
+{{ book.productnameFull }} by design does not define any "embedded" ComplexType in the EntityType.
 
-Since OData access is more key based, it is * MANDATORY* that every table Teiid exposes through OData must have a PK or at least one UNIQUE key. A table which does not either of these will be dropeed out of the $metadata
+Since OData access is more key based, it is *MANDATORY* that every table {{ book.productnameFull }} exposes through OData must have a PK or at least one UNIQUE key. A table which does not either of these will be dropped out of the $metadata.
+
+Since all data roles are not consulted in the construction of the OData metadata there are times when tables or procedures will need to be specifically hidden.  This can be done in the vdb via a "teiid_odata:visible" extension metadata property on the object.
+
+[source,sql]
+----
+create foreign table HIDDEN (id long primary key, ...) OPTIONS ("teiid_odata:visible" false);
+---- 
+
+With teiid_odata:visible set to false the OData layer will not expose the given object.
+
+Datatype Mapping
+
+|===
+|{{ book.productnameFull }} Type|OData Type
+|STRING |Edm.String
+|BOOLEAN |Edm.Boolean
+|BYTE |Edm.SByte
+|SHORT |Edm.Int16
+|INTEGER |Edm.Int32
+|LONG |Edm.Int64
+|FLOAT |Edm.Single
+|DOUBLE |Edm.Double
+|BIG_INTEGER |Edm.Decimal
+|BIG_DECIMAL |Edm.Decimal
+|DATE |Edm.Date
+|TIME |Edm.TimeOfDay
+|TIMESTAMP |Edm.DateTimeOffset
+|BLOB |Edm.Stream
+|CLOB |Edm.Stream
+|XML |Edm.Stream
+|VARBINARY |Edm.Binary 
+|===
+
+Geography and Geometry will be mapped to the corresponding Edm.GeometryXXX and Edm.GeographyXXX types based upon the associated {http://www.teiid.org/translator/spatial/2015}type property.  A general mapping to Edm.Geometry or EdmGeography will fail to serialize the values correctly.
+
+Where possible array types will be mapped to a collection type.  However multidimensional arrays are not supported.  Also array/collection values cannot be used as parameters nor in comparisons.
+
+[id="client-dev-OData4_Support-Functions-And-Actions"]
+=== Functions And Actions
+
+The mapping of entities and their properties is relatively straight-forward.  The mapping of {{ book.productnameFull }} procedures to OData Functions and Actions is more involved.  Virtual procedures, source procedure, and virtual functions defined by DDL (not a Java class) are all eligible to be mapped.  Source functions or virtual functions defined by a Java class are currently not mapped to corresponding OData constructs - please log an issue if you need that functionality.  OData does not have an out parameter concept, thus OUT parameters are ignored, and INOUT parameters are treated only as IN.  A result set is mapped to a complex type collection result. An array result will be mapped to a simple type collection.
+
+An OData Function will be used if:
+
+* The procedure/function has a return value - either scalar or a result set.
+* The procedure/function has no LOB input parameters - currently Clob, Blob, XML, Geometry, Geography, and JSON are considered LOB types.
+* The procedure/function is side effect free - this is determined by an explicit value of 0 for the update count.  For example: CREATE VIRTUAL PROCEDURE ... OPTIONS (UPDATECOUNT 0) AS BEGIN ...
+
+If any one of those conditions are not met the procedure/function is represented instead by an OData Action.  However if there is a result set that has a LOB value, then the procedure is not mapped at all as multiple streaming values cannot be returned.
+
+Note that OData Functions and Actions are called differently.  A Function is called by a GET request where the parameter values are included in the URI.  An Action is called by a POST where the content provides the parameter values.
+
+Currently only unbounded Functions and Actions are supported.
+
+You should always consult the $metadata about Functions and Actions to validate how the procedures/functions were mapped.
+
+[id="client-dev-OData4_Support-OpenAPI-Metadata"]
+== OpenAPI Metadata
+
+An https://issues.redhat.com/browse/TEIID-5555[experimental feature] is available to automatically provide a Swagger 2.0 / https://www.openapis.org/[OpenAPI] metadata via [swagger|openapi].json rather than $metadata.
+
+[source]
+.*Example OpenAPI 2.0 URLs*
+----
+http://localhost:8080/{{ book.odataContext }}/swagger.json
+http://localhost:8080/{{ book.odataContext }}/openapi.json
+http://localhost:8080/{{ book.odataContext }}/openapi.json?version=2
+----
+
+[source]
+.*Example OpenAPI 3.0 URL*
+----
+http://localhost:8080/{{ book.odataContext }}/openapi.json?version=3
+----
+
+WARNING: Due to all of the possible query options and expansions this metadata will be significantly larger than the OData EDM representation.

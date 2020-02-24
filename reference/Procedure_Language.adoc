@@ -3,7 +3,7 @@
 :toc: manual
 :toc-placement: preamble
 
-Teiid supports a procedural language for defining link:Virtual_Procedures.adoc[Virtual Procedures]. These are similar to stored procedures in relational database management systems. You can use this language to define the transformation logic for decomposing INSERT, UPDATE, and DELETE commands against views; these are known as link:Update_Procedures_Triggers.adoc[Update Procedures (Triggers)].
+{{ book.productnameFull }} supports a procedural language for defining link:Virtual_Procedures.adoc[Virtual Procedures]. These are similar to stored procedures in relational database management systems. You can use this language to define the transformation logic for decomposing INSERT, UPDATE, and DELETE commands against views; these are known as link:Update_Procedures_Triggers.adoc[Update Procedures (Triggers)].
 
 == Command Statement
 
@@ -28,6 +28,30 @@ Syntax Rules:
 * link:DML_Commands.adoc#_execute_command[EXECUTE] command statements may access IN/OUT, OUT, and RETURN parameters. To access the return value the statement will have the form `var = EXEC proc...`. To access OUT or IN/OUT values named parameter syntax must be used. For example, `EXEC proc(in_param=>'1', out_param=>var)` will assign the value of the out parameter to the variable var. It is expected that the datatype of parameter will be implicitly convertable to the datatype of the variable.
 
 * The RETURN clause determines if the result of the command is returnable from the procedure. WITH RETURN is the default. If the command does not return a result set or the procedure does not return a result set, the RETURN clause is ignored. If WITH RETURN is specified, the result set of the command must match the expected result set of the procedure. Only the last successfully executed statement executed WITH RETURN will be returned as the procedure result set.  If there are no returnable result sets and the procedure declares that a result set will be returned, then an empty result set is returned.
+
+NOTE: the INTO clause is used only for inserting into a table.  SELECT ... INTO tbl ... is functionally equivalent to INSERT INTO tbl SELECT ...  If you need to do variable assignments you can do one of the following:
+* use an assignment statement with a scalar subquery:  
+
+[source,sql]
+----
+DECLARE string var = (SELECT col ...);
+----
+
+* use a temporary table:
+
+[source,sql]
+----
+INSERT INTO #temp SELECT col1, col2 ...;
+DECLARE string VARIABLES.RESULT = (SELECT x FROM #temp);
+----
+
+* use an array:
+
+[source,sql]
+----
+DECLARE string[] var = (SELECT (col1, col2) ...);
+DECLARE string col1val = var[1];
+----
 
 == Dynamic SQL Command
 
@@ -136,9 +160,6 @@ If the dynamic SQL is an UPDATE, DELETE, or INSERT command, the rowcount of the 
 EXECUTE IMMEDIATE <expression>;
 ----
 
-* Unless used in other parts of the procedure, tables in the dynamic command will not be seen as sources in the Designer.
-* When using the "AS" clause only the type information will be available to the Designer. ResultSet columns generated from the "AS" clause then will have a default set of properties for length, precision, etc.
-
 == Declaration Statement
 
 A declaration statement declares a variable and its type. After you declare a variable, you can use it in that block within the procedure and any sub-blocks. A variable is initialized to null by default, but can also be assigned the value of an expression as part of the declaration statement.
@@ -244,7 +265,7 @@ Syntax Rules
 
 If the EXCEPTION clause is used with in a compound statement, any processing exception emitted from statements will be caught with the flow of execution transferring to EXCEPTION statements. Any block level transaction started by this block will commit if the exception handler successfully completes. If another exception or the original exception is emitted from the exception handler the transaction will rollback. Any temporary tables or variables specific to the BLOCK will not be available to the exception handler statements.
 
-NOTE: Only processing exceptions, which are typically caused by errors originating at the sources or with function execution, are caught. A low-level internal Teiid error or Java `RuntimeException` will not be caught.
+NOTE: Only processing exceptions, which are typically caused by errors originating at the sources or with function execution, are caught. A low-level internal {{ book.productnameFull }} error or Java `RuntimeException` will not be caught.
 
 To aid in the processing of a caught exception the EXCEPTION clause specifies a group name that exposes the significant fields of the exception. The exception group will contain:
 
@@ -257,11 +278,11 @@ To aid in the processing of a caught exception the EXCEPTION clause specifies a 
 
 |ERRORCODE
 |integer
-|The error or vendor code. In the case of Teiid internal exceptions this  will be the integer suffix of the TEIIDxxxx code
+|The error or vendor code. In the case of {{ book.productnameFull }} internal exceptions this  will be the integer suffix of the TEIIDxxxx code
 
 |TEIIDCODE
 |string
-|The full Teiid event code. Typically TEIIDxxxx.
+|The full {{ book.productnameFull }} event code. Typically TEIIDxxxx.
 
 |EXCEPTION
 |object
@@ -272,7 +293,7 @@ To aid in the processing of a caught exception the EXCEPTION clause specifies a 
 |The chained exception or cause of the current exception
 |===
 
-NOTE: Teiid does not yet fully comply with the ANSI SQL specification on SQL State usage. For Teiid errors without an underlying SQLException cause, it is best to use the Teiid code.
+NOTE: {{ book.productnameFull }} does not yet fully comply with the ANSI SQL specification on SQL State usage. For {{ book.productnameFull }} errors without an underlying SQLException cause, it is best to use the {{ book.productnameFull }} code.
 
 The exception group name may not be the same as any higher level exception group or loop cursor name.
 
@@ -433,7 +454,17 @@ RETURN [expression];
 Syntax Rules
 
 * If an expression is specified, the procedure must have a return parameter and the value must be implicitly convertable to the expected type.
-* Even if the procedure has a return value, it is not required to specify a return value in a RETURN statement.
+* Even if the procedure has a return parameter, it is not required to specify a return value in a RETURN statement.  A return parameter can still be set via an assignment or simply left as null.
+
+[source,sql]
+.*Sample Usage*
+----
+CREATE VIRTUAL FUNCTION times_two(val integer) 
+   RETURNS integer AS
+   BEGIN
+      RETURN val*2;
+   END
+----
 
 == Error Statement
 
@@ -497,6 +528,6 @@ SQLEXCEPTION message [SQLSTATE state [, code]] CHAIN exception
 Syntax Rules
 
 * Any of the values may be null;
-* message and state are string expressions specifying the exception message and SQL state respectively. Teiid does not yet fully comply with the ANSI SQL specification on SQL state usage, but you are allowed to set any SQL state you choose.
+* message and state are string expressions specifying the exception message and SQL state respectively. {{ book.productnameFull }} does not yet fully comply with the ANSI SQL specification on SQL state usage, but you are allowed to set any SQL state you choose.
 * code is an integer expression specifying the vendor code
 * exception must be a variable reference to an exception or an exception expression and will be chained to the resulting exception as its parent.

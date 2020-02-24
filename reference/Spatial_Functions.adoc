@@ -3,11 +3,11 @@
 :toc: manual
 :toc-placement: preamble
 
-Spatial functions provide functionality for working with http://www.opengeospatial.org/[geospatial] data. Teiid relies on the http://www.vividsolutions.com/jts/JTSHome.htm[JTS Topology Suite] to provide partial support for the OpenGIS Simple Features Specification For SQL Revision 1.1. Please refer to the https://portal.opengeospatial.org/files/?artifact_id=829[specification] or to http://postgis.net/docs/manual-2.0/[PostGIS] for more details about particular functions.
+Spatial functions provide functionality for working with http://www.opengeospatial.org/[geospatial] data. {{ book.productnameFull }} relies on the http://www.vividsolutions.com/jts/JTSHome.htm[JTS Topology Suite] to provide partial support for the OpenGIS Simple Features Specification For SQL Revision 1.1. Please refer to the https://portal.opengeospatial.org/files/?artifact_id=829[specification] or to http://postgis.net/docs/manual-2.0/[PostGIS] for more details about particular functions.
 
 Most Geometry support is limited to two dimensions due to the WKB and WKT formats.
 
-NOTE: Geometry support is still evolving. There may be minor differences between Teiid and pushdown results that will need to be further refined.
+NOTE: Geometry support is still evolving. There may be minor differences between {{ book.productnameFull }} and pushdown results that will need to be further refined.
 
 == Conversion Functions
 
@@ -21,6 +21,17 @@ ST_GeomFromText(text [, srid])
 ----
 
 text is a clob, srid is an optional integer. Return value is a geometry.
+
+=== ST_GeogFromText
+
+Returns a geography from a Clob in (E)WKT format.
+
+[source,sql]
+----
+ST_GeogFromText(text)
+----
+
+text is a clob, srid is an optional integer. Return value is a geography.
 
 === ST_GeomFromWKB/ST_GeomFromBinary
 
@@ -44,7 +55,18 @@ ST_GeomFromEWKB(bin)
 
 bin is a blob. Return value is a geometry.  Only 2 dimensions are supported.
 
-=== ST_GeomFromText
+=== ST_GeogFromWKB
+
+Returns a geography from a blob in (E)WKB format.
+
+[source,sql]
+----
+ST_GeomFromEWKB(bin)
+----
+
+bin is a blob. Return value is a geography.  Only 2 dimensions are supported.
+
+=== ST_GeomFromEWKT
 
 Returns a geometry from a Clob in EWKT format.
 
@@ -90,10 +112,10 @@ geom is a geometry. Return value is clob in WKT format.
 
 [source,sql]
 ----
-ST_AsBinary(geom)
+ST_AsBinary(geo)
 ----
 
-geom is a geometry. Return value is a blob in WKB format.
+geo is a geometry or geography. Return value is a blob in WKB format.
 
 === ST_AsEWKB
 
@@ -126,10 +148,10 @@ geom is a geometry. Return value is a clob with the GML2 value.
 
 [source,sql]
 ----
-ST_AsEWKT(geom)
+ST_AsEWKT(geo)
 ----
 
-geom is a geometry. Return value is a clob with the EWKT value. The EWKT value is the WKT value with the SRID prefix.
+geo is a geometry or geography. Return value is a clob with the EWKT value. The EWKT value is the WKT value with the SRID prefix.
 
 === ST_AsKML
 
@@ -194,10 +216,10 @@ Returns the distance between two geometries.
 
 [source,sql]
 ----
-ST_Distance(geom1, geom2)
+ST_Distance(geo1, geo2)
 ----
 
-geom1, geom2 are geometries. Return value is a double.
+geo1, geo2 are both geometries or geographies. Return value is a double.  The geography variant must be pushed down for evaluation.
 
 === ST_DWithin
 
@@ -227,10 +249,10 @@ Returns true if the geometries intersect.
 
 [source,sql]
 ----
-ST_Intersects(geom1, geom2)
+ST_Intersects(geo1, geo2)
 ----
 
-geom1, geom2 are geometries. Return value is a boolean.
+geo1, geo2 are both geometries or geographies. Return value is a boolean.  The geography variant must be pushed down for evaluation.
 
 === ST_OrderingEquals
 
@@ -456,10 +478,10 @@ Returns the length of a (Multi)LineString otherwise 0.
 
 [source,sql]
 ----
-ST_Length(geom)
+ST_Length(geo)
 ----
 
-geom is a geometry. Return value is a double.
+geo is a geometry or a geography. Return value is a double. The geography variant must be pushed down for evaluation.
 
 === ST_NumGeometries
 
@@ -533,10 +555,10 @@ Returns the SRID for the geometry.
 
 [source,sql]
 ----
-ST_SRID(geom)
+ST_SRID(geo)
 ----
 
-geom is a geometry. Return value is an integer. A 0 value rather than null will be returned for an unknown SRID on a non-null geometry.
+geo is a geometry or geography. Return value is an integer. A 0 value rather than null will be returned for an unknown SRID on a non-null geometry.
 
 === ST_SetSRID
 
@@ -544,10 +566,10 @@ Set the SRID for the given geometry.
 
 [source,sql]
 ----
-ST_SetSRID(geom, srid)
+ST_SetSRID(geo, srid)
 ----
 
-geom is a geometry. srid is an integer. Return value is a geometry. Only the SRID metadata of the geometry is modified.
+geo is a geometry or geography. srid is an integer. Return value is the same as geo. Only the SRID metadata of is modified - no transformation is performed.
 
 === ST_StartPoint
 
@@ -641,7 +663,7 @@ geom is a geometry. Return value is a geometry.
 
 === ST_CurveToLine
 
-Converts a CircularString/CurvedPolygon to a LineString/Polygon.  Not currently implemented in Teiid.
+Converts a CircularString/CurvedPolygon to a LineString/Polygon.  Not currently implemented in {{ book.productnameFull }}.
 
 [source,sql]
 ----

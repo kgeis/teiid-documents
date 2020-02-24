@@ -13,12 +13,14 @@ Unless specified, all of the arguments and return types in the following table a
 |x,y in {string, clob}, return type is string or clob
 
 |ASCII(x)
-|Provide ASCII value of the left most character in x. The empty string will as input will return null.
+|Provide ASCII value of the left most character[1] in x. The empty string will as input will return null.
 |return type is integer
 
 |CHR(x) CHAR(x)
-|Provide the character for ASCII value x [a]
+|Provide the character[1] for ASCII value x [a]
 |x in {integer}
+
+[1] For the engine's implementations of the ASCII and CHR functions characters are limited to UCS2 values only.  For pushdown there is little consistency among sources for character values beyond character code 255.  
 
 |CONCAT(x, y)
 |Concatenates x and y with ANSI semantics. If x and/or y is null, returns null.
@@ -48,11 +50,11 @@ Unless specified, all of the arguments and return types in the following table a
 |Get left y characters of x
 |x in {string}, y in {integer}, return string
 
-|LENGTH(x)
+|LENGTH(x) CHAR_LENGTH(x) CHARACTER_LENGTH(x)
 |Length of x
 |return type is integer
 
-|LOCATE(x, y)
+|LOCATE(x, y) POSITION(x IN y)
 |Find position of x in y starting at beginning of y
 |x in {string}, y in {string}, return integer
 
@@ -125,9 +127,9 @@ Unless specified, all of the arguments and return types in the following table a
 |x in {string}
 |===
 
-[a] Non-ASCII range characters or integers used in these functions may produce different results or exceptions depending on where the function is evaluated (Teiid vs. source). Teiid’s uses Java default int to char and char to int conversions, which operates over UTF16 values.
+[a] Non-ASCII range characters or integers used in these functions may produce different results or exceptions depending on where the function is evaluated ({{ book.productnameFull }} vs. source). {{ book.productnameFull }}’s uses Java default int to char and char to int conversions, which operates over UTF16 values.
 
-[b] The substring function depending upon the source does not have consistent behavior with respect to negative from/length arguments nor out of bounds from/length arguments. The default Teiid behavior is:
+[b] The substring function depending upon the source does not have consistent behavior with respect to negative from/length arguments nor out of bounds from/length arguments. The default {{ book.productnameFull }} behavior is:
 
 * return a null value when the from value is out of bounds or the length is less than 0
 * a zero from index is effective the same as 1.
@@ -146,7 +148,7 @@ Return a clob from the blob with the given encoding.
 TO_CHARS(x, encoding [, wellformed])
 ----
 
-BASE64, HEX, and the built-in Java Charset names are valid values for the encoding [b]. x is a blob, encoding is a string, wellformed is a boolean, and returns a clob. The two argument form defaults to wellformed=true. If wellformed is false, the conversion function will immediately validate the result such that an unmappable character or malformed input will raise an exception.
+BASE64, HEX, UTF-8-BOM and the built-in Java Charset names are valid values for the encoding [b]. x is a blob, encoding is a string, wellformed is a boolean, and returns a clob. The two argument form defaults to wellformed=true. If wellformed is false, the conversion function will immediately validate the result such that an unmappable character or malformed input will raise an exception.
 
 === TO_BYTES
 
@@ -157,9 +159,9 @@ Return a blob from the clob with the given encoding.
 TO_BYTES(x, encoding [, wellformed])
 ----
 
-BASE64, HEX, and the builtin Java Charset names are valid values for the encoding [b]. x in a clob, encoding is a string, wellformed is a boolean and returns a blob. The two argument form defaults to wellformed=true. If wellformed is false, the conversion function will immediately validate the result such that an unmappable character or malformed input will raise an exception. If wellformed is true, then unmappable characters will be replaced by the default replacement character for the character set. Binary formats, such as BASE64 and HEX, will be checked for correctness regardless of the wellformed parameter.
+BASE64, HEX, UTF-8-BOM and the builtin Java Charset names are valid values for the encoding [b]. x in a clob, encoding is a string, wellformed is a boolean and returns a blob. The two argument form defaults to wellformed=true. If wellformed is false, the conversion function will immediately validate the result such that an unmappable character or malformed input will raise an exception. If wellformed is true, then unmappable characters will be replaced by the default replacement character for the character set. Binary formats, such as BASE64 and HEX, will be checked for correctness regardless of the wellformed parameter.
 
-[b] See the http://java.sun.com/j2se/1.5.0/docs/api/java/nio/charset/Charset.html[Charset JavaDoc] for more on supported Charset names.
+[b] See the https://docs.oracle.com/javase/8/docs/technotes/guides/intl/encoding.doc.html[Charset docs] for more on supported Charset names.
 
 == Replacement Functions
 

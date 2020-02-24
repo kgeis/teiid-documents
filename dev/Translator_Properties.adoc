@@ -5,7 +5,7 @@ During translator development, a translator developer can define three (3) diffe
 
 == Translator Override Properties
 
-On the "ExecutionFactory" class a translator developer can define any number of "getter/setter" methods with the @TranslatorProperty annotation. These properties (also referred to a execution properties) can be used for extending the capabilities of the translator. It is important to define default values for all these properties, as these properties are being defined to change the default behavior of the translator. If needed, the values for these properties are supplied in "vdb.xml" file during the deploy time when the translator is used to represent vdb’s model. A sample example is given below:
+On the "ExecutionFactory" class a translator developer can define any number of "getter/setter" methods with the @TranslatorProperty annotation. These properties (also referred to a execution properties) can be used for extending the capabilities of the translator. It is important to define default values for all these properties, as these properties are being defined to change the default behavior of the translator. If needed, the values for these properties are supplied in the vdb during the deploy time when the translator is used to represent vdb’s model. A sample example is given below:
 
 [source,java]
 ----
@@ -18,8 +18,20 @@ public void setCopyLobs(boolean copyLobs) {
     this.copyLobs = copyLobs;
 ----
 
-at runtime these properties can be defined in vdb.xml as
+at runtime these properties can be defined in the vdb as
 
+[source,sql]
+----
+CREATE DATABASE vdb;
+USE DATABASE vdb;
+CREATE FOREIGN DATA WRAPPER "my-translator-override" TYPE "my-translator" OPTIONS (CopyLobs 'true');
+CREATE SERVER connector FOREIGN DATA WRAPPER "my-translator-override";
+CREATE SCHEMA PM1 SERVER connector;
+SET SCHEMA PM1;
+IMPORT FROM SERVER connector INTO PM1;
+----
+
+{% if book.targetWildfly %}
 [source,java]
 ----
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -32,6 +44,7 @@ at runtime these properties can be defined in vdb.xml as
     </translator>
 </vdb>
 ----
+{% endif %}
 
 == Metadata Import Properties
 
@@ -64,8 +77,21 @@ public MyMetadataProcessor implements MetadataProcessor<MyConnection> {
 }
 ----
 
-Below is an example showing how to use import properties with a vdb.xml file
+Below is an example showing how to use import properties with a vdb file
 
+[source,sql]
+----
+CREATE DATABASE vdb;
+USE DATABASE vdb;
+CREATE SERVER connector FOREIGN DATA WRAPPER "my-translator";
+CREATE SCHEMA PM1 SERVER connector OPTIONS ("importer.HeaderRowNumber" '12');
+SET SCHEMA PM1;
+IMPORT FROM SERVER connector INTO PM1 OPTIONS ("importer.HeaderRowNumber" '12');
+----
+
+Note that the import properties in DDL may be on either the SERVER or the IMPORT statement.
+
+{% if book.targetWildfly %}
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -76,14 +102,13 @@ Below is an example showing how to use import properties with a vdb.xml file
     </model>
 </vdb>
 ----
-
-NOTE: *"Designer Integration"* - When properties are defined using the annotation mechanism and when using the "Teiid Connection" importer in the Designer, these properties will automatically show up in appropriate wizard for input.
+{% endif %}
 
 == Extension Metadata Properties
 
-During the execution of the command in translator, a translator is responsible to convert Teiid supplied SQL command into data source specific query. Most of times this conversion is not a trivial task can be converted from one form to another. There are many cases built-in metadata is not sufficient and additional metadata about source is useful to form a request to the underlying physical source system. Extension Metadata Properties one such mechanism to fill the gap in the metadata. These can be defined specific for a given translator.
+During the execution of the command in translator, a translator is responsible to convert {{ book.productnameFull }} supplied SQL command into data source specific query. Most of times this conversion is not a trivial task can be converted from one form to another. There are many cases built-in metadata is not sufficient and additional metadata about source is useful to form a request to the underlying physical source system. Extension Metadata Properties one such mechanism to fill the gap in the metadata. These can be defined specific for a given translator.
 
-A translator is a plugin, that is communicating with Teiid engine about it’s source with it’s metadata. Metadata in this context is definitions of Tables, Columns, Procedures, Keys etc. This metadata can be decorated with additional custom metadata and fed to Teiid query engine. Teiid query engine keeps this extended metadata intact along with its schema objects, and when a user query is submitted to the the translator for execution, this extended metadata can be retrieved for making decisions in the translator code.
+A translator is a plugin, that is communicating with {{ book.productnameFull }} engine about it’s source with it’s metadata. Metadata in this context is definitions of Tables, Columns, Procedures, Keys etc. This metadata can be decorated with additional custom metadata and fed to {{ book.productnameFull }} query engine. {{ book.productnameFull }} query engine keeps this extended metadata intact along with its schema objects, and when a user query is submitted to the the translator for execution, this extended metadata can be retrieved for making decisions in the translator code.
 
 Extended properties are defined using annotation class called @ExtensionMetadataProperty on the fields in your "MetadataProcessor" or "ExcutionFactory" classes.
 
@@ -119,6 +144,3 @@ Now during the execution, on the COMMAND object supplied to the "Execution" clas
 
     // use the encoding value as needed to marshal or unmarshal data 
 ----
-
-NOTE: *"Designer Integration"* - When extended properties are defined using the annotation mechanism, when using "Teiid Connection" importer in the Designer, you do not need to define the "Metadata Extension Defn" in designer and register to to use with your model, the required definitions are automatically downloaded and configured to use. (This feature is not available in current Designer version)
-
